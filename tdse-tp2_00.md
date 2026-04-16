@@ -1,29 +1,83 @@
-En ingeniería, la implementación de una Máquina de Estados Finitos (FSM) se define teóricamente por la tupla (S,Σ,δ,s0​,F). Al trasladar esto a lenguaje C, el conjunto S representará los estados, Σ los eventos, y la función δ(Sactual​,Σevento​) será la lógica de transición. Basado en los patrones de diseño de software embebido (como los documentados por Miro Samek para arquitecturas reactivas), existen dos enfoques principales y rigurosos para codificar esto.
-Metodologías de Codificación en C
-1. Método de Switch-Case Anidados
+Codificar diagramas de estado (también conocidos como Máquinas de Estados Finitos o FSM, por sus siglas en inglés) en C es un tema excelente para un trabajo práctico. Es un patrón de diseño fundamental, especialmente en sistemas embebidos, videojuegos y control de hardware.
+Aquí tienes una estructura completa que puedes usar como base para tu Trabajo Práctico, enfocada en un ejemplo clásico y fácil de entender: Un Semáforo.
+Trabajo Práctico: Codificación de Diagramas de Estado en C.
+1. Objetivos del Trabajo
+   - Comprender el concepto de Máquina de Estados Finitos (FSM).
+   - Aprender a traducir un diagrama de estados visual a código estructurado en C.
+   - Utilizar estructuras de control fundamentales (enum, switch-case) para el manejo de estados y transiciones.
 
-Este es el diseño clásico y secuencial, ideal para diagramas de complejidad baja o moderada. Todo el ruteo se resuelve en tiempo de ejecución mediante saltos condicionales.
+2. Marco Teórico
+   Un diagrama de estados describe el comportamiento de un sistema que puede estar en uno de varios estados en un momento dado. El sistema cambia de un estado a otro a través de transiciones, las cuales son desencadenadas por eventos o condiciones específicas (como el paso del tiempo o la pulsación de un botón).
+   Para este trabajo, modelaremos un sistema con tres estados básicos:
+   - VERDE: Los vehículos pueden avanzar.
+   - AMARILLO: Precaución, el semáforo está por cambiar.
+   - ROJO: Los vehículos deben detenerse.
 
-    Definición de Dominio: Se utilizan enumeraciones (enum) tanto para el conjunto de estados S como para el conjunto de eventos Σ. Esto elimina los "números mágicos" y asegura tipado fuerte.
+3. Diseño del Sistema (Máquina de Estados)
+   La transición entre estos estados dependerá de un temporizador (simulado en el código).
+   a) Estado inicial: VERDE.
+   b) De VERDE transiciona a AMARILLO tras $N$ segundos.
+   c) De AMARILLO transiciona a ROJO tras $M$ segundos.
+   d) De ROJO transiciona nuevamente a VERDE tras $X$ segundos.
 
-    Variable de Estado: Se inicializa una variable Sactual​ con el valor del estado inicial s0​.
+4. Implementación en C
+   La forma más común y eficiente de implementar esto en C es utilizando un tipo enumerado (enum) para definir los estados y una estructura switch-case dentro de un bucle para manejar las transiciones.C
 
-    Estructura Principal: Se implementa una función o tarea que contiene un switch primario que evalúa Sactual​.
+#include <stdio.h>
+#include <unistd.h> // Para la función sleep()
 
-    Lógica de Transición: Dentro de cada case correspondiente a un estado, se evalúa el evento entrante (con otro switch o sentencias if). Si el evento dispara una transición válida, se ejecutan las acciones (de salida, transición y entrada) y se actualiza Sactual​=Ssiguiente​.
+// 1. Definición de los estados usando enum
+typedef enum {
+    ESTADO_VERDE,
+    ESTADO_AMARILLO,
+    ESTADO_ROJO
+} EstadoSemaforo;
 
-2. Método de Punteros a Funciones (Tabla de Transiciones)
+int main() {
+    // 2. Inicialización del estado
+    EstadoSemaforo estadoActual = ESTADO_VERDE;
+    
+    printf("Iniciando simulación del semáforo...\n\n");
 
-Para sistemas complejos, los anidamientos múltiples son difíciles de mantener. Este método mapea la función de transición δ de forma matricial, logrando un tiempo de despacho de eventos constante de O(1).
+    // Bucle infinito de la máquina de estados
+    for(int i = 0; i < 6; i++) { // Limitado a 6 ciclos para el ejemplo
+        
+        // 3. Lógica de estados y transiciones (Switch-Case)
+        switch (estadoActual) {
+            
+            case ESTADO_VERDE:
+                printf("[VERDE]    Los autos avanzan. (Esperando 3 segundos...)\n");
+                sleep(3); // Simulamos el tiempo que pasa
+                estadoActual = ESTADO_AMARILLO; // Transición al siguiente estado
+                break;
+                
+            case ESTADO_AMARILLO:
+                printf("[AMARILLO] Precaución.        (Esperando 1 segundo...)\n");
+                sleep(1);
+                estadoActual = ESTADO_ROJO; // Transición al siguiente estado
+                break;
+                
+            case ESTADO_ROJO:
+                printf("[ROJO]     Autos detenidos.   (Esperando 3 segundos...)\n");
+                sleep(3);
+                estadoActual = ESTADO_VERDE; // Transición al estado inicial
+                break;
+                
+            default:
+                printf("Error: Estado desconocido.\n");
+                estadoActual = ESTADO_VERDE; // Recuperación de error
+                break;
+        }
+    }
+    
+    printf("\nSimulación finalizada.\n");
+    return 0;
+}
 
-    Definición de Dominio: Se declaran los mismos enum para estados y eventos.
+5. Consignas Propuestas para el Alumno
+   Para que el trabajo práctico sea interactivo, puedes pedir a los alumnos (o a ti mismo) que amplíen este código base con los siguientes desafíos:
+   a) Agregar un botón de peatón: Incorporar un evento externo (entrada por consola usando kbhit() o leyendo un caracter) que, si se presiona mientras está en VERDE, acelere el paso a AMARILLO.
+   b) Modo Nocturno: Agregar un estado extra (ESTADO_INTERMITENTE) donde el semáforo solo titile en amarillo indefinidamente, activado por un comando específico.
+   c) Múltiples Semáforos: Modularizar el código utilizando struct para poder manejar dos semáforos de una intersección al mismo tiempo.
 
-    Funciones de Acción: Se encapsula el comportamiento de cada estado (o de cada transición) en funciones individuales e independientes con la misma firma, por ejemplo: void Estado_Idle(void).
 
-    Matriz de Despacho: Se construye un arreglo bidimensional estático de punteros a funciones de tamaño S×Σ.
-
-    Motor de FSM: La lógica central se reduce a indexar la matriz. El sistema toma la variable Sactual​ y el índice del evento Σevento​, y ejecuta la función apuntada en esa coordenada: Tabla_FSM[S_{actual}][\Sigma_{evento}]().
-
-Suposiciones iniciales: Asumo que el diagrama ya está modelado teóricamente, que ya está definido si el sistema obedece a una arquitectura de Mealy (las salidas dependen de Sactual​ y Σevento​) o de Moore (las salidas solo dependen de Sactual​), y que el código correrá en un entorno de ejecución estándar o sobre un microcontrolador (sin un RTOS de por medio todavía).
-
-Para no inventar la estructura de tu sistema ni el código, necesito los parámetros exactos de tu diseño.
