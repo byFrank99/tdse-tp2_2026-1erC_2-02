@@ -1,8 +1,3 @@
-from weasyprint import HTML
-
-# Contenido Markdown para el archivo
-markdown_content = """# Análisis Técnico: Módulo de Actuador (TDSE TP2)
-
 Este documento detalla el funcionamiento técnico del módulo del actuador, basado en los archivos `task_actuator_attribute.h`, `task_actuator.c` y `task_actuator_interface.c`.
 
 ## 1. Funcionamiento General del Módulo
